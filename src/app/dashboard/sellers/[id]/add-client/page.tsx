@@ -8,7 +8,7 @@ interface Client {
   id: number;
   name: string;
   email: string;
-  seller: Seller | null; // Pode ser null se o cliente não tiver vendedor
+  seller: Seller | null;
 }
 
 interface Seller {
@@ -17,64 +17,80 @@ interface Seller {
 }
 
 export default function ClientSellerManagement() {
-  const [sellers, setSellers] = useState<Seller[]>([]); // Lista de vendedores
-  const [clients, setClients] = useState<Client[]>([]); // Lista de clientes com vendedores
-  const [selectedSeller, setSelectedSeller] = useState(""); // Vendedor selecionado
-  const [selectedClient, setSelectedClient] = useState(""); // Cliente selecionado
-  const [loading, setLoading] = useState(true); // Indicador de carregamento
-  const [error, setError] = useState(""); // Mensagem de erro para exibição
+  const [sellers, setSellers] = useState<Seller[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [selectedSeller, setSelectedSeller] = useState("");
+  const [selectedClient, setSelectedClient] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const router = useRouter();
 
-  // Carrega vendedores e a lista de clientes com seus vendedores ao carregar a página
+  // Função para buscar vendedores e clientes ao carregar a página
   useEffect(() => {
     const fetchSellersAndClients = async () => {
-      setLoading(true); // Ativa o loading
+      setLoading(true);  // Ativa o indicador de carregamento
 
       try {
-        const sellersRes = await fetch("/api/sellers/list");
-        if (!sellersRes.ok) {
-          throw new Error("Erro ao buscar vendedores.");
-        }
-        const sellersData: Seller[] = await sellersRes.json();
-        console.log("Sellers data:", sellersData); // Verificação do retorno dos vendedores
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("Token não encontrado");
+
+        // Busca lista de vendedores
+        const sellersRes = await fetch("/api/sellers/list", {
+          headers: {
+            Authorization: `Bearer ${token}`,  // Inclui o token de autenticação
+          },
+        });
+        if (!sellersRes.ok) throw new Error("Erro ao buscar vendedores.");
+        const sellersData = await sellersRes.json();
         setSellers(Array.isArray(sellersData) ? sellersData : []);
 
-        const clientsRes = await fetch("/api/clients-with-sellers");
-        if (!clientsRes.ok) {
-          throw new Error("Erro ao buscar clientes.");
-        }
-        const clientsData: Client[] = await clientsRes.json();
-        console.log("Clients data:", clientsData); // Verificação do retorno dos clientes
+        // Busca lista de clientes com vendedores
+        const clientsRes = await fetch("/api/clients-with-sellers", {
+          headers: {
+            Authorization: `Bearer ${token}`,  // Inclui o token de autenticação
+          },
+        });
+        if (!clientsRes.ok) throw new Error("Erro ao buscar clientes.");
+        const clientsData = await clientsRes.json();
         setClients(clientsData);
       } catch (error) {
         console.error("Erro ao buscar vendedores ou clientes:", error);
         setError("Erro ao buscar dados. Verifique sua conexão ou tente novamente.");
       } finally {
-        setLoading(false); // Desativa o loading
+        setLoading(false);  // Desativa o indicador de carregamento
       }
     };
 
     fetchSellersAndClients();
   }, []);
 
-  // Função para associar um cliente a um vendedor
+  // Função para associar cliente ao vendedor
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("Token não encontrado");
+
+      // Envia a requisição para associar o cliente ao vendedor
       const res = await fetch(`/api/sellers/${selectedSeller}/add-client`, {
         method: "POST",
-        body: JSON.stringify({ clientId: selectedClient }),
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,  // Inclui o token de autenticação
         },
+        body: JSON.stringify({ clientId: selectedClient }),
       });
 
       if (res.ok) {
-        // Após associar, recarrega a lista de clientes com vendedores
-        const clientsRes = await fetch("/api/clients-with-sellers");
+        // Recarrega a lista de clientes com vendedores
+        const clientsRes = await fetch("/api/clients-with-sellers", {
+          headers: {
+            Authorization: `Bearer ${token}`,  // Inclui o token de autenticação
+          },
+        });
         const clientsData: Client[] = await clientsRes.json();
-        setClients(clientsData); // Atualiza a lista
+        setClients(clientsData);  // Atualiza a lista
       } else {
         alert("Erro ao associar cliente ao vendedor");
       }
@@ -87,9 +103,7 @@ export default function ClientSellerManagement() {
   return (
     <div className="container">
       <h1 className="mt-4">Gerenciamento de Clientes e Vendedores</h1>
-
-      {error && <div className="alert alert-danger">{error}</div>} {/* Exibição de erros */}
-
+      {error && <div className="alert alert-danger">{error}</div>}
       {loading ? (
         <p>Carregando dados...</p>
       ) : (

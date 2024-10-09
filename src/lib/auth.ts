@@ -18,7 +18,11 @@ export function getToken(token: string): CustomJwtPayload | null {
       return decoded;
     }
     return null;
-  } catch (err) {
-    throw new Error('Token inválido ou expirado.');
+  } catch (err: unknown) {
+    // Aqui usamos a asserção de tipo para informar que err é do tipo Error
+    if (err instanceof Error) {
+      console.error('Erro ao decodificar token:', err.message);
+    }
+    return null;  // Em vez de lançar erro, retornar null
   }
 }
