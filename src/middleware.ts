@@ -1,6 +1,7 @@
 // src/middleware.ts
 import { NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
+import { prisma } from '@/lib/prisma';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 
@@ -13,16 +14,33 @@ export async function middleware(request: Request) {
 
   try {
     // Verifica o token JWT
-    await jwtVerify(token, new TextEncoder().encode(JWT_SECRET));
+    const { id, role } = await jwtVerify(token, new TextEncoder().encode(JWT_SECRET)).then(res => res.payload);
 
-    // Continua se o token for válido
+    // Verifica se o usuário é administrador
+    if (role === 'ADMIN') {
+      return NextResponse.next();  // Admin tem acesso completo
+    }
+
+    // Verifica se a rota é de acesso restrito e valida se é vendedor
+    if (role === 'SELLER' && request.url.includes('/api/clients')) {
+      const clientId = parseInt(request.url.split('/').pop()!);
+      const client = await prisma.client.findUnique({
+        where: { id: clientId },
+        select: { sellerId: true },
+      });
+
+      // Se o cliente não pertence ao vendedor, nega o acesso
+      if (client?.sellerId !== id) {
+        return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
+      }
+    }
+
     return NextResponse.next();
   } catch (err) {
     return NextResponse.json({ error: 'Token inválido ou expirado.' }, { status: 401 });
   }
 }
 
-// Atualiza o matcher para seguir o padrão correto
 export const config = {
-  matcher: ['/api/protected/:path*'],  // Protege qualquer rota que comece com /api/protected
+  matcher: ['/api/clients/:path*', '/api/sellers/:path*'],
 };

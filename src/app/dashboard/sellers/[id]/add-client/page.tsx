@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import 'bootstrap/dist/css/bootstrap.min.css'; // Certifique-se de que o Bootstrap está sendo carregado
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import "bootstrap/dist/css/bootstrap.min.css";
 
-// Defina a interface para os dados do cliente e do vendedor
 interface Client {
   id: number;
   name: string;
@@ -20,20 +19,24 @@ interface Seller {
 export default function ClientSellerManagement() {
   const [sellers, setSellers] = useState<Seller[]>([]); // Lista de vendedores
   const [clients, setClients] = useState<Client[]>([]); // Lista de clientes com vendedores
-  const [selectedSeller, setSelectedSeller] = useState(''); // Vendedor selecionado
-  const [selectedClient, setSelectedClient] = useState(''); // Cliente selecionado
+  const [selectedSeller, setSelectedSeller] = useState(""); // Vendedor selecionado
+  const [selectedClient, setSelectedClient] = useState(""); // Cliente selecionado
   const router = useRouter();
 
   // Carrega vendedores e a lista de clientes com seus vendedores ao carregar a página
   useEffect(() => {
     const fetchSellersAndClients = async () => {
-      const sellersRes = await fetch('/api/sellers/list');
-      const sellersData: Seller[] = await sellersRes.json();
-      setSellers(sellersData);
+      try {
+        const sellersRes = await fetch("/api/sellers/list");
+        const sellersData: Seller[] = await sellersRes.json();
+        setSellers(sellersData);
 
-      const clientsRes = await fetch('/api/clients-with-sellers');
-      const clientsData: Client[] = await clientsRes.json();
-      setClients(clientsData); // Carrega a lista completa de clientes com seus vendedores
+        const clientsRes = await fetch("/api/clients-with-sellers");
+        const clientsData: Client[] = await clientsRes.json();
+        setClients(clientsData);
+      } catch (error) {
+        console.error("Erro ao buscar vendedores ou clientes:", error);
+      }
     };
 
     fetchSellersAndClients();
@@ -43,21 +46,26 @@ export default function ClientSellerManagement() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const res = await fetch(`/api/sellers/${selectedSeller}/add-client`, {
-      method: 'POST',
-      body: JSON.stringify({ clientId: selectedClient }), // Envia o ID do cliente selecionado
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    try {
+      const res = await fetch(`/api/sellers/${selectedSeller}/add-client`, {
+        method: "POST",
+        body: JSON.stringify({ clientId: selectedClient }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-    if (res.ok) {
-      // Após associar, recarrega a lista de clientes com vendedores
-      const clientsRes = await fetch('/api/clients-with-sellers');
-      const clientsData: Client[] = await clientsRes.json();
-      setClients(clientsData); // Atualiza a lista
-    } else {
-      alert('Erro ao associar cliente ao vendedor');
+      if (res.ok) {
+        // Após associar, recarrega a lista de clientes com vendedores
+        const clientsRes = await fetch("/api/clients-with-sellers");
+        const clientsData: Client[] = await clientsRes.json();
+        setClients(clientsData); // Atualiza a lista
+      } else {
+        alert("Erro ao associar cliente ao vendedor");
+      }
+    } catch (error) {
+      console.error("Erro ao associar cliente:", error);
+      alert("Erro ao associar cliente ao vendedor.");
     }
   };
 
@@ -69,30 +77,56 @@ export default function ClientSellerManagement() {
         <div className="row mb-3">
           <div className="col-md-6">
             <label className="form-label">Escolha um Vendedor</label>
-            <select className="form-select" value={selectedSeller} onChange={(e) => setSelectedSeller(e.target.value)} required>
-              <option value="" disabled>Selecione um vendedor</option>
-              {sellers.map((seller) => (
-                <option key={seller.id} value={seller.id}>
-                  {seller.name}
-                </option>
-              ))}
+            <select
+              className="form-select"
+              value={selectedSeller}
+              onChange={(e) => setSelectedSeller(e.target.value)}
+              required
+            >
+              <option value="" disabled>
+                Selecione um vendedor
+              </option>
+              {sellers.length > 0 ? (
+                sellers.map((seller) => (
+                  <option key={seller.id} value={seller.id}>
+                    {seller.name}
+                  </option>
+                ))
+              ) : (
+                <option disabled>Nenhum vendedor disponível</option>
+              )}
             </select>
           </div>
 
           <div className="col-md-6">
             <label className="form-label">Escolha um Cliente</label>
-            <select className="form-select" value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)} required>
-              <option value="" disabled>Selecione um cliente</option>
-              {clients.filter(client => !client.seller).map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.name} - {client.email}
-                </option>
-              ))}
+            <select
+              className="form-select"
+              value={selectedClient}
+              onChange={(e) => setSelectedClient(e.target.value)}
+              required
+            >
+              <option value="" disabled>
+                Selecione um cliente
+              </option>
+              {clients.length > 0 ? (
+                clients
+                  .filter((client) => !client.seller)
+                  .map((client) => (
+                    <option key={client.id} value={client.id}>
+                      {client.name} - {client.email}
+                    </option>
+                  ))
+              ) : (
+                <option disabled>Nenhum cliente disponível</option>
+              )}
             </select>
           </div>
         </div>
 
-        <button type="submit" className="btn btn-primary">Associar Cliente</button>
+        <button type="submit" className="btn btn-primary">
+          Associar Cliente
+        </button>
       </form>
 
       <div className="row">
@@ -107,16 +141,19 @@ export default function ClientSellerManagement() {
             </thead>
             <tbody>
               {sellers.map((seller) => {
-                // Filtra clientes por vendedor
-                const associatedClients = clients.filter(client => client.seller?.id === seller.id);
+                const associatedClients = clients.filter(
+                  (client) => client.seller?.id === seller.id
+                );
                 return (
                   <tr key={seller.id}>
                     <td>{seller.name}</td>
                     <td>
                       {associatedClients.length > 0 ? (
                         <ul>
-                          {associatedClients.map(client => (
-                            <li key={client.id}>{client.name} - {client.email}</li>
+                          {associatedClients.map((client) => (
+                            <li key={client.id}>
+                              {client.name} - {client.email}
+                            </li>
                           ))}
                         </ul>
                       ) : (

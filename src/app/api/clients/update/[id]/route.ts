@@ -1,28 +1,34 @@
+// src/app/api/clients/update/[id]/route.ts
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
+import { getToken } from '@/lib/auth';
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
-  try {
-    const { name, email, phone, sellerId } = await req.json();
-    const id = parseInt(params.id); // Pega o ID da URL
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
+  const token = request.headers.get('authorization')?.split(' ')[1];
+  const user = getToken(token!);  // O token pode ser nulo, então vamos verificar
 
-    if (!name || !email || !phone) {
-      return NextResponse.json({ message: 'Dados incompletos' }, { status: 400 });
-    }
-
-    const updatedClient = await prisma.client.update({
-      where: { id }, // Usa o ID da URL para localizar o cliente
-      data: {
-        name,
-        email,
-        phone,
-        ...(sellerId && { sellerId }), // Adiciona sellerId se fornecido
-      },
-    });
-
-    return NextResponse.json(updatedClient, { status: 200 });
-  } catch (error) {
-    console.error('Erro ao atualizar cliente:', error);
-    return NextResponse.json({ message: 'Erro ao atualizar cliente' }, { status: 500 });
+  // Verificação adicional para garantir que o token não é nulo
+  if (!user) {
+    return NextResponse.json({ message: 'Token inválido ou não fornecido.' }, { status: 401 });
   }
+
+  const id = parseInt(params.id);
+  const { name, email, phone } = await request.json();
+
+  // Verifica se o vendedor está associado ao cliente
+  const client = await prisma.client.findUnique({
+    where: { id },
+    select: { sellerId: true },
+  });
+
+  if (!client || (user.role === 'SELLER' && client.sellerId !== user.id)) {
+    return NextResponse.json({ message: 'Acesso negado.' }, { status: 403 });
+  }
+
+  const updatedClient = await prisma.client.update({
+    where: { id },
+    data: { name, email, phone },
+  });
+
+  return NextResponse.json(updatedClient, { status: 200 });
 }
