@@ -18,11 +18,13 @@ export function getToken(token: string): CustomJwtPayload | null {
       return decoded;
     }
     return null;
-  } catch (err: unknown) {
-    // Aqui usamos a asserção de tipo para informar que err é do tipo Error
+  } catch (err) {
     if (err instanceof Error) {
+      // Verifica se 'err' é uma instância do tipo 'Error' e acessa a mensagem
       console.error('Erro ao decodificar token:', err.message);
+    } else {
+      console.error('Erro desconhecido ao decodificar token');
     }
-    return null;  // Em vez de lançar erro, retornar null
+    return null; // Retorna null em caso de erro
   }
 }
