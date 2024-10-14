@@ -1,19 +1,21 @@
-// src/app/api/sellers/list/route.ts
+// src/app/api/clients/list/route.ts
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const sellers = await prisma.user.findMany({
-      where: { role: 'SELLER' },
+    const clients = await prisma.client.findMany({
       select: {
         id: true,
         name: true,
+        email: true,
+        phone: true,
       },
     });
 
-    return NextResponse.json(sellers);
+    return NextResponse.json(clients);
   } catch (error) {
-    return NextResponse.json({ message: 'Erro ao buscar vendedores.' }, { status: 500 });
+    console.error('Erro ao buscar clientes:', error);
+    return NextResponse.json({ message: 'Erro ao buscar clientes.' }, { status: 500 });
   }
 }

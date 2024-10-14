@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,7 +12,7 @@ model User {
   name      String
   email     String   @unique
   password  String
-  role      Role     @default(USER) // Papel do usuário: ADMIN, SELLER ou USER
+  role      Role     @default(USER)
   createdAt DateTime @default(now())
   clients   Client[] // Relacionamento com clientes vinculados ao vendedor
 }

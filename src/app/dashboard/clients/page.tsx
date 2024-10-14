@@ -20,7 +20,7 @@ export default function ClientsPage() {
   const [editClientId, setEditClientId] = useState<number | null>(null);
   const router = useRouter();
 
-  // Fetch clients from API
+  // Buscar a lista de clientes da API
   useEffect(() => {
     const fetchClients = async () => {
       const token = localStorage.getItem('token');
@@ -49,7 +49,7 @@ export default function ClientsPage() {
     fetchClients();
   }, []);
 
-  // Submit form to add a new client
+  // Função para submeter novo cliente
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
@@ -75,17 +75,16 @@ export default function ClientsPage() {
     }
   };
 
-  // Handle updating a client
+  // Função para atualizar cliente
   const handleUpdateClient = async (clientId: number) => {
     const token = localStorage.getItem('token');
-    const sellerId = 1; // Substitua pelo valor real do sellerId se necessário
     const res = await fetch(`/api/clients/update/${clientId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ name, email, phone, sellerId }), // Incluindo sellerId
+      body: JSON.stringify({ name, email, phone }),
     });
 
     if (res.ok) {
@@ -106,7 +105,7 @@ export default function ClientsPage() {
     }
   };
 
-  // Handle deleting a client
+  // Função para excluir cliente
   const handleDeleteClient = async (clientId: number) => {
     const token = localStorage.getItem('token');
     const res = await fetch(`/api/clients/delete/${clientId}`, {
@@ -126,7 +125,7 @@ export default function ClientsPage() {
     }
   };
 
-  // Handle edit mode activation
+  // Função para entrar em modo de edição
   const handleEdit = (client: Client) => {
     setEditMode(true);
     setEditClientId(client.id);

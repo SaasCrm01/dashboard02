@@ -25,46 +25,41 @@ export default function ClientSellerManagement() {
   const [error, setError] = useState("");
   const router = useRouter();
 
-  // Função para buscar vendedores e clientes ao carregar a página
   useEffect(() => {
     const fetchSellersAndClients = async () => {
-      setLoading(true);  // Ativa o indicador de carregamento
-
+      setLoading(true);
       try {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("Token não encontrado");
 
-        // Busca lista de vendedores
         const sellersRes = await fetch("/api/sellers/list", {
           headers: {
-            Authorization: `Bearer ${token}`,  // Inclui o token de autenticação
+            Authorization: `Bearer ${token}`,
           },
         });
         if (!sellersRes.ok) throw new Error("Erro ao buscar vendedores.");
         const sellersData = await sellersRes.json();
         setSellers(Array.isArray(sellersData) ? sellersData : []);
 
-        // Busca lista de clientes com vendedores
         const clientsRes = await fetch("/api/clients-with-sellers", {
           headers: {
-            Authorization: `Bearer ${token}`,  // Inclui o token de autenticação
+            Authorization: `Bearer ${token}`,
           },
         });
         if (!clientsRes.ok) throw new Error("Erro ao buscar clientes.");
         const clientsData = await clientsRes.json();
         setClients(clientsData);
       } catch (error) {
-        console.error("Erro ao buscar vendedores ou clientes:", error);
+        console.error(error);
         setError("Erro ao buscar dados. Verifique sua conexão ou tente novamente.");
       } finally {
-        setLoading(false);  // Desativa o indicador de carregamento
+        setLoading(false);
       }
     };
 
     fetchSellersAndClients();
   }, []);
 
-  // Função para associar cliente ao vendedor
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -72,30 +67,28 @@ export default function ClientSellerManagement() {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Token não encontrado");
 
-      // Envia a requisição para associar o cliente ao vendedor
       const res = await fetch(`/api/sellers/${selectedSeller}/add-client`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,  // Inclui o token de autenticação
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ clientId: selectedClient }),
       });
 
       if (res.ok) {
-        // Recarrega a lista de clientes com vendedores
         const clientsRes = await fetch("/api/clients-with-sellers", {
           headers: {
-            Authorization: `Bearer ${token}`,  // Inclui o token de autenticação
+            Authorization: `Bearer ${token}`,
           },
         });
         const clientsData: Client[] = await clientsRes.json();
-        setClients(clientsData);  // Atualiza a lista
+        setClients(clientsData);
       } else {
         alert("Erro ao associar cliente ao vendedor");
       }
     } catch (error) {
-      console.error("Erro ao associar cliente:", error);
+      console.error(error);
       alert("Erro ao associar cliente ao vendedor.");
     }
   };
@@ -121,15 +114,11 @@ export default function ClientSellerManagement() {
                   <option value="" disabled>
                     Selecione um vendedor
                   </option>
-                  {sellers.length > 0 ? (
-                    sellers.map((seller) => (
-                      <option key={seller.id} value={seller.id}>
-                        {seller.name}
-                      </option>
-                    ))
-                  ) : (
-                    <option disabled>Nenhum vendedor disponível</option>
-                  )}
+                  {sellers.map((seller) => (
+                    <option key={seller.id} value={seller.id}>
+                      {seller.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -144,17 +133,13 @@ export default function ClientSellerManagement() {
                   <option value="" disabled>
                     Selecione um cliente
                   </option>
-                  {clients.length > 0 ? (
-                    clients
-                      .filter((client) => !client.seller)
-                      .map((client) => (
-                        <option key={client.id} value={client.id}>
-                          {client.name} - {client.email}
-                        </option>
-                      ))
-                  ) : (
-                    <option disabled>Nenhum cliente disponível</option>
-                  )}
+                  {clients
+                    .filter((client) => !client.seller)
+                    .map((client) => (
+                      <option key={client.id} value={client.id}>
+                        {client.name} - {client.email}
+                      </option>
+                    ))}
                 </select>
               </div>
             </div>
@@ -175,35 +160,29 @@ export default function ClientSellerManagement() {
                   </tr>
                 </thead>
                 <tbody>
-                  {Array.isArray(sellers) && sellers.length > 0 ? (
-                    sellers.map((seller) => {
-                      const associatedClients = clients.filter(
-                        (client) => client.seller?.id === seller.id
-                      );
-                      return (
-                        <tr key={seller.id}>
-                          <td>{seller.name}</td>
-                          <td>
-                            {associatedClients.length > 0 ? (
-                              <ul>
-                                {associatedClients.map((client) => (
-                                  <li key={client.id}>
-                                    {client.name} - {client.email}
-                                  </li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <span>Sem clientes</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan={2}>Nenhum vendedor disponível</td>
-                    </tr>
-                  )}
+                  {sellers.map((seller) => {
+                    const associatedClients = clients.filter(
+                      (client) => client.seller?.id === seller.id
+                    );
+                    return (
+                      <tr key={seller.id}>
+                        <td>{seller.name}</td>
+                        <td>
+                          {associatedClients.length > 0 ? (
+                            <ul>
+                              {associatedClients.map((client) => (
+                                <li key={client.id}>
+                                  {client.name} - {client.email}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <span>Sem clientes</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

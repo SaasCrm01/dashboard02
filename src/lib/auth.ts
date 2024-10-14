@@ -1,7 +1,7 @@
 // src/lib/auth.ts
 import jwt, { JwtPayload } from 'jsonwebtoken';
 
-// Interface personalizada que extende JwtPayload para incluir id e role
+// Interface personalizada que estende JwtPayload para incluir id e role
 interface CustomJwtPayload extends JwtPayload {
   id: number;
   role: 'ADMIN' | 'SELLER' | 'USER';
@@ -19,8 +19,8 @@ export function getToken(token: string): CustomJwtPayload | null {
     }
     return null;
   } catch (err) {
+    // Verificação do tipo de erro
     if (err instanceof Error) {
-      // Verifica se 'err' é uma instância do tipo 'Error' e acessa a mensagem
       console.error('Erro ao decodificar token:', err.message);
     } else {
       console.error('Erro desconhecido ao decodificar token');
@@ -28,3 +28,4 @@ export function getToken(token: string): CustomJwtPayload | null {
     return null; // Retorna null em caso de erro
   }
 }
+

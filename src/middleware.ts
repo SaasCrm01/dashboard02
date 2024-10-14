@@ -13,23 +13,23 @@ export async function middleware(request: Request) {
   }
 
   try {
-    // Verifica o token JWT
     const { id, role } = await jwtVerify(token, new TextEncoder().encode(JWT_SECRET)).then(res => res.payload);
 
-    // Verifica se o usuário é administrador
     if (role === 'ADMIN') {
-      return NextResponse.next();  // Admin tem acesso completo
+      return NextResponse.next();
     }
 
-    // Verifica se a rota é de acesso restrito e valida se é vendedor
-    if (role === 'SELLER' && request.url.includes('/api/clients')) {
+    if (role === 'SELLER' && request.method === 'POST') {
+      return NextResponse.next();
+    }
+
+    if (role === 'SELLER' && request.url.includes('/api/clients/')) {
       const clientId = parseInt(request.url.split('/').pop()!);
       const client = await prisma.client.findUnique({
         where: { id: clientId },
         select: { sellerId: true },
       });
 
-      // Se o cliente não pertence ao vendedor, nega o acesso
       if (client?.sellerId !== id) {
         return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 });
       }
