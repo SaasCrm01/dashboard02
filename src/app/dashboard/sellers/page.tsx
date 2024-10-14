@@ -6,6 +6,7 @@ interface Seller {
   id: number;
   name: string;
   email: string;
+  role: string; // Adicionado campo role para garantir a filtragem correta
 }
 
 export default function SellersPage() {
@@ -16,7 +17,7 @@ export default function SellersPage() {
   const [editingSeller, setEditingSeller] = useState<Seller | null>(null); // Para edição
   const [loading, setLoading] = useState(true);
 
-  // Fetch sellers from API
+  // Buscar vendedores da API
   useEffect(() => {
     const fetchSellers = async () => {
       const token = localStorage.getItem('token');
@@ -25,26 +26,30 @@ export default function SellersPage() {
           Authorization: `Bearer ${token}`,
         },
       });
-  
+
       const data = await res.json();
-  
-      // Aqui estamos garantindo que apenas vendedores serão listados
-      setSellers(data.filter((seller: any) => seller.role === 'SELLER')); // Filtrando apenas vendedores
+
+      // Verifica se data é um array antes de aplicar o filter
+      if (Array.isArray(data)) {
+        setSellers(data.filter((seller) => seller.role === 'SELLER')); // Filtrando apenas vendedores
+      } else {
+        console.error('Erro: os dados retornados não são um array.', data);
+        setSellers([]);
+      }
+
       setLoading(false);
     };
-  
+
     fetchSellers();
   }, []);
-  
-  // Submit form to add or update a seller
+
+  // Submit form para adicionar ou atualizar um vendedor
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
 
     if (editingSeller) {
-      // Atualizar vendedor
-      console.log("ID do vendedor para atualização:", editingSeller.id); // Log do ID do vendedor
-
+      // Atualizar vendedor existente
       const res = await fetch('/api/sellers/update', {
         method: 'PUT',
         headers: {
@@ -93,14 +98,14 @@ export default function SellersPage() {
     }
   };
 
-  // Handle edit seller
+  // Editar vendedor
   const handleEdit = (seller: Seller) => {
     setEditingSeller(seller);
     setName(seller.name);
     setEmail(seller.email);
   };
 
-  // Handle delete seller
+  // Excluir vendedor
   const handleDelete = async (id: number) => {
     const token = localStorage.getItem('token');
 

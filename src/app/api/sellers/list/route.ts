@@ -1,12 +1,17 @@
-// src/app/api/clients/list/route.ts
-
-// src/app/api/sellers/list/route.ts
 // src/app/api/sellers/list/route.ts
 
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
+import { getToken } from '@/lib/auth'; // Importar função de autenticação
 
-export async function GET() {
+export async function GET(request: Request) {
+  const token = request.headers.get('authorization')?.split(' ')[1] || ''; // Garante que token seja uma string
+  const user = getToken(token);
+
+  if (!user || user.role !== 'ADMIN') {
+    return NextResponse.json({ message: 'Acesso negado.' }, { status: 403 }); // Apenas ADMIN pode listar todos os vendedores
+  }
+
   try {
     const sellers = await prisma.user.findMany({
       where: { role: 'SELLER' }, // Retorna apenas usuários com o papel de vendedor
